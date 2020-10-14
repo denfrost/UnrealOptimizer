@@ -9,27 +9,31 @@
 
 #include "OptimizerActorComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventDelegate_OnCheckRender, bool, RenderFlag);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UNREALOPTIMIZER_API UOptimizerActorComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-	/** Component shown in the editor only to indicate optimizer component*/
-#if WITH_EDITORONLY_DATA 
 	UPROPERTY()
 	UArrowComponent* ArrowComponent;
-#endif 
+	
 public:	
 	// Sets default values for this component's properties
 	UOptimizerActorComponent();
 	
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "UnrealOptimizer")
+	FEventDelegate_OnCheckRender OnCheckRender;
+
 	/** Main tick function for the Component */
     // r.VisualizeOccludedPrimitives 1
 
 	//Render Property Info
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
 	bool bRenderNow;
+
+	bool bCachedRenderNow = bRenderNow; // Cached for one fire evemt
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
 	float RenderDelay = 0.0;
 

@@ -3,7 +3,7 @@
 
 #include "OptimizerActorComponent.h"
 
-#include "Components/PrimitiveComponent.h"
+
 #include "Runtime/Renderer/Public/PrimitiveSceneInfo.h"
 
 // Sets default values for this component's properties
@@ -14,18 +14,10 @@ UOptimizerActorComponent::UOptimizerActorComponent()
 	
 	PrimaryComponentTick.bCanEverTick = true;
 
-#if WITH_EDITORONLY_DATA 	// ...Usefull Flag Optimizer 
-	ArrowComponent = CreateEditorOnlyDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
-	if (ArrowComponent)
-	{
-		ArrowComponent->SetHiddenInGame(false);
-		ArrowComponent->ArrowColor = FColor(255, 0, 0);
-		ArrowComponent->bTreatAsASprite = true;
-		ArrowComponent->bIsScreenSizeScaled = true;
-		ArrowComponent->SetRelativeLocation(FVector(0,0,120));
-		ArrowComponent->SetRelativeScale3D(FVector(2, 2, 2));
-	}
-#endif // WITH_EDITORONLY_DATA
+	ArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("OptimizerArrow"));
+    ArrowComponent->SetHiddenInGame(false,true);
+	ArrowComponent->SetVisibility(true);
+	ArrowComponent->ArrowColor = FColor(255, 0, 0);
 }
 
 
@@ -33,8 +25,15 @@ UOptimizerActorComponent::UOptimizerActorComponent()
 void UOptimizerActorComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Log, TEXT("Optimizer Activated!"));
-	// ...
+	FString sn = GetOwner()->GetFName().ToString();
+	UE_LOG(LogTemp, Log, TEXT("Optimizer BeginPlay! %s"),*sn);
+	// ...Get Info
+	
+	//UPrimitiveComponent* PC = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
+	//float snmd = PC->MinDrawDistance;
+	//UE_LOG(LogTemp, Log, TEXT("MinDrawDistance :  %f"), snmd);
+	ArrowComponent->SetWorldLocation(GetOwner()->GetActorLocation());
+	GetOwner()->AddInstanceComponent(ArrowComponent);
 	
 }
 
@@ -46,9 +45,15 @@ void UOptimizerActorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 
 	bRenderNow = WasRecentlyRendered(RenderDelay);
 
+	if (bCachedRenderNow != bRenderNow)
+	{
+		OnCheckRender.Broadcast(bRenderNow);
+		bCachedRenderNow = bRenderNow;
+	};
 	//ArrowComponent->SetVisibility(!bRenderNow);
 	// ...
 }
+
 
 //
 bool UOptimizerActorComponent::CheckRenderInfo(float &lastTime)
