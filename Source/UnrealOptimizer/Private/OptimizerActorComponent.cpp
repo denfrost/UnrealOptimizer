@@ -13,11 +13,13 @@ UOptimizerActorComponent::UOptimizerActorComponent()
 	// off to improve performance if you don't need them.
 	
 	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.TickInterval = 0; // Set 0.2-0.25 for slow machine
 
 	ArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("OptimizerArrow"));
     ArrowComponent->SetHiddenInGame(false,true);
 	ArrowComponent->SetVisibility(true);
 	ArrowComponent->ArrowColor = FColor(255, 0, 0);
+	//ArrowComponent->SetRelativeScale3D(FVector::ZeroVector); //just for render activation
 }
 
 
@@ -67,8 +69,6 @@ bool UOptimizerActorComponent::CheckRenderInfo(float &lastTime)
 		lastTime = PC->GetLastRenderTime();
 		return true;
 	};
-		//GetLastRenderTimeOnScreen(); -1 =/
-	//lastTime = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent())->SceneProxy->GetPrimitiveSceneInfo()->LastRenderTime;
 	return false;
 }
 
