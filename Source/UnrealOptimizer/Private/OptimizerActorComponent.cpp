@@ -12,11 +12,11 @@ UOptimizerActorComponent::UOptimizerActorComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickInterval = 0; // Set 0.2-0.25 for slow machine
 
-	ArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("OptimizerArrow"));
-    ArrowComponent->SetHiddenInGame(false,true);
-	ArrowComponent->SetVisibility(true);
-	ArrowComponent->ArrowColor = FColor(255, 0, 0);
-	//ArrowComponent->SetRelativeScale3D(FVector::ZeroVector); //just for render activation
+	ArrowOptimizer = CreateDefaultSubobject<UArrowComponent>(TEXT("OptimizerArrow"));
+    ArrowOptimizer->SetHiddenInGame(false,true);
+	ArrowOptimizer->SetVisibility(true);
+	ArrowOptimizer->ArrowColor = FColor(255, 0, 0);
+	//ArrowOptimizer->SetRelativeScale3D(FVector::ZeroVector); //just for render activation
 }
 
 
@@ -31,11 +31,19 @@ void UOptimizerActorComponent::BeginPlay()
 	//UPrimitiveComponent* PC = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
 	//float snmd = PC->MinDrawDistance;
 	//UE_LOG(LogTemp, Log, TEXT("MinDrawDistance :  %f"), snmd);
-	ArrowComponent->SetWorldLocation(GetOwner()->GetActorLocation());
-	GetOwner()->AddInstanceComponent(ArrowComponent);
+	ArrowOptimizer->SetWorldLocation(GetOwner()->GetActorLocation());
+	GetOwner()->AddInstanceComponent(ArrowOptimizer);
+	if (bShowActorsOptimizer)
+	{
+		ArrowOptimizer->SetRelativeScale3D(FVector::OneVector * 2); //just for render activation
+	}
+	else { ArrowOptimizer->SetVisibility(false); }
 	
-	if (!MainMesh)
-	MainMesh = Cast < UStaticMeshComponent>(GetOwner()->GetComponentByClass(UStaticMeshComponent::StaticClass()));
+	if (!MonitorComponent)
+	{
+		MonitorComponent = Cast<UPrimitiveComponent>(GetOwner()->GetComponentByClass(UPrimitiveComponent::StaticClass()));
+		if (!MonitorComponent) UE_LOG(LogTemp, Log, TEXT("Optimizer Casting problem! %s"), *GetNameSafe(GetOwner()));
+	}
 }
 
 
@@ -49,6 +57,9 @@ void UOptimizerActorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	{
 		OnCheckVisible.Broadcast(bOnScreenNow);
 		bCachedVisibleNow = bOnScreenNow;
+
+		//LogInfo
+		if (MonitorComponent) CheckRenderInfo(MonitorComponent);
 	}
 
 	//bRenderNow = WasRecentlyRendered(RenderDelay);
@@ -64,15 +75,17 @@ void UOptimizerActorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 
 
 //
-bool UOptimizerActorComponent::CheckRenderInfo(float &lastTime)
+bool UOptimizerActorComponent::CheckRenderInfo(UPrimitiveComponent* _PrimitiveComp)
 {
 	if (const UWorld* const World = GetWorld())
 	{
-		AActor* Owner = GetOwner();
-		UPrimitiveComponent* PC = Cast<UPrimitiveComponent>(Owner->GetRootComponent());
-		FPrimitiveSceneProxy* SP = PC->SceneProxy;
-		FPrimitiveSceneInfo* PSI = SP->GetPrimitiveSceneInfo();
-		lastTime = PC->GetLastRenderTime();
+		UE_LOG(LogTemp, Log, TEXT("UPrimitiveComponent RenderInfo:"));
+		UE_LOG(LogTemp, Log, TEXT("Name Object: %s"),*GetNameSafe(_PrimitiveComp));
+		if (_PrimitiveComp)
+		{
+			int32 d = _PrimitiveComp->VisibilityId;
+			UE_LOG(LogTemp, Log, TEXT("VisibilityId = %d"), d);
+		}
 		return true;
 	};
 	return false;
@@ -86,7 +99,7 @@ bool UOptimizerActorComponent::WasRecentlyRendered(float &DelayRender,float Tole
 		const float RenderTimeThreshold = FMath::Max(Tolerance, World->DeltaTimeSeconds + KINDA_SMALL_NUMBER);
 
 		// If the current cached value is less than the tolerance then we don't need to go look at the components
-		DelayRender = World->TimeSince(ArrowComponent->GetLastRenderTime());
+		DelayRender = World->TimeSince(ArrowOptimizer->GetLastRenderTime());
 		return DelayRender <= RenderTimeThreshold; //World->TimeSince(GetOwner()->GetLastRenderTime()) <= RenderTimeThreshold;
 	}
 	return false;
@@ -100,7 +113,7 @@ bool UOptimizerActorComponent::WasRecentlyVisible(float Tolerance /*= 0.2*/) con
 		const float RenderTimeThreshold = FMath::Max(Tolerance, World->DeltaTimeSeconds + KINDA_SMALL_NUMBER);
 
 		// If the current cached value is less than the tolerance then we don't need to go look at the components
-		return World->TimeSince(MainMesh->GetLastRenderTimeOnScreen()) <= RenderTimeThreshold;
+		return World->TimeSince(MonitorComponent->GetLastRenderTimeOnScreen()) <= RenderTimeThreshold;
 	}
 	return false;
 }

@@ -10,7 +10,6 @@
 
 /* Called when Render Component*/
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEventDelegate_OnCheckRender, bool, RenderFlag, bool, VisibleFlag);
-/* Called when Visible OnScreen Component*/
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventDelegate_OnCheckVisible, bool, VisibleFlag);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -19,7 +18,7 @@ class UNREALOPTIMIZER_API UOptimizerActorComponent : public UActorComponent
 	GENERATED_BODY()
 
 	UPROPERTY()
-	UArrowComponent* ArrowComponent;
+	UArrowComponent* ArrowOptimizer;
 	
 public:	
 	// Sets default values for this component's properties
@@ -27,31 +26,24 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "UnrealOptimizer")
 	FEventDelegate_OnCheckRender OnCheckRender;
+	/* Called when Visible OnScreen Component*/
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "UnrealOptimizer")
 	FEventDelegate_OnCheckVisible OnCheckVisible;
 
-
+	UPROPERTY(EditAnywhere, Category = "UnrealOptimizer")
+	bool bShowActorsOptimizer;
 	/** Main tick function for the Component */
     // r.VisualizeOccludedPrimitives 1
 	// FreezeRendering
 	UPROPERTY(EditAnywhere,Category = "UnrealOptimizer")
-	UStaticMeshComponent* MainMesh;
-
-
-	//Render Property Info
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
-	bool bRenderNow;
-
-	bool bCachedRenderNow = bRenderNow; // Cached for one fire event
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
-	float RenderDelay = 0.0;
+	UPrimitiveComponent* MonitorComponent;
 
 	//Occlusion Property Info
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
 	bool bOnScreenNow;
 
 	bool bCachedVisibleNow = bOnScreenNow; // Cached for one fire evemt
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
 	float OccludedDelay = 0.0;
 
 protected:
@@ -63,7 +55,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable, Category = "UnrealOptimizer", meta = (WorldContext = WorldContextObject))
-	bool CheckRenderInfo(float &lastTime);
+	bool CheckRenderInfo(UPrimitiveComponent* _PrimitiveComp);
 
 	/** 1 Check Render Condition
 	 * My Custom. Returns true if this component has been rendered "recently", with a tolerance in seconds to define what "recent" means.
@@ -83,4 +75,11 @@ public:
 
 	UFUNCTION(Category = "UnrealOptimizer", BlueprintCallable, meta = (DisplayName = "WasPrimitiveComponentRenderedRecently", Keywords = "recent"))
 	bool WasPrimitiveComponentRenderedRecently(UPrimitiveComponent* _PrimitiveComponent, float _Tolerance = 0.2) const;
+
+private:
+	//Render Property Info
+	bool bRenderNow;
+
+	bool bCachedRenderNow = bRenderNow; // Cached for one fire event
+		float RenderDelay = 0.0;
 };
