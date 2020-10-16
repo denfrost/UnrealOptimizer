@@ -1,6 +1,3 @@
-
-
-
 #include "OptimizerActorComponent.h"
 
 
@@ -37,6 +34,8 @@ void UOptimizerActorComponent::BeginPlay()
 	ArrowComponent->SetWorldLocation(GetOwner()->GetActorLocation());
 	GetOwner()->AddInstanceComponent(ArrowComponent);
 	
+	if (!MainMesh)
+	MainMesh = Cast < UStaticMeshComponent>(GetOwner()->GetComponentByClass(UStaticMeshComponent::StaticClass()));
 }
 
 
@@ -45,13 +44,20 @@ void UOptimizerActorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	bRenderNow = WasRecentlyRendered(RenderDelay);
-
-	if (bCachedRenderNow != bRenderNow)
+	bOnScreenNow = WasRecentlyVisible();
+	if (bCachedVisibleNow != bOnScreenNow)
 	{
-		OnCheckRender.Broadcast(bRenderNow);
+		OnCheckVisible.Broadcast(bOnScreenNow);
+		bCachedVisibleNow = bOnScreenNow;
+	}
+
+	//bRenderNow = WasRecentlyRendered(RenderDelay);
+	/*if (bCachedRenderNow != bRenderNow)
+	{
+		OnCheckRender.Broadcast(bRenderNow, bOnScreenNow);
 		bCachedRenderNow = bRenderNow;
-	};
+	};*/
+
 	//ArrowComponent->SetVisibility(!bRenderNow);
 	// ...
 }
@@ -72,7 +78,7 @@ bool UOptimizerActorComponent::CheckRenderInfo(float &lastTime)
 	return false;
 }
 
-bool UOptimizerActorComponent::WasRecentlyRendered(float &DelayRender, float Tolerance /*= 0.2*/) const
+bool UOptimizerActorComponent::WasRecentlyRendered(float &DelayRender,float Tolerance /*= 0.2*/) const
 {
 	if (const UWorld* const World = GetWorld())
 	{
@@ -80,9 +86,39 @@ bool UOptimizerActorComponent::WasRecentlyRendered(float &DelayRender, float Tol
 		const float RenderTimeThreshold = FMath::Max(Tolerance, World->DeltaTimeSeconds + KINDA_SMALL_NUMBER);
 
 		// If the current cached value is less than the tolerance then we don't need to go look at the components
-		DelayRender = World->TimeSince(GetOwner()->GetLastRenderTime());
+		DelayRender = World->TimeSince(ArrowComponent->GetLastRenderTime());
 		return DelayRender <= RenderTimeThreshold; //World->TimeSince(GetOwner()->GetLastRenderTime()) <= RenderTimeThreshold;
 	}
 	return false;
 }
 
+bool UOptimizerActorComponent::WasRecentlyVisible(float Tolerance /*= 0.2*/) const
+{
+	if (const UWorld* const World = GetWorld())
+	{
+		// Adjust tolerance, so visibility is not affected by bad frame rate / hitches.
+		const float RenderTimeThreshold = FMath::Max(Tolerance, World->DeltaTimeSeconds + KINDA_SMALL_NUMBER);
+
+		// If the current cached value is less than the tolerance then we don't need to go look at the components
+		return World->TimeSince(MainMesh->GetLastRenderTimeOnScreen()) <= RenderTimeThreshold;
+	}
+	return false;
+}
+
+/*
+ * Returns true if this primitive component has been rendered "recently", with a tolerance in seconds to define what "recent" means.
+ * e.g.: If a tolerance of 0.1 is used, this function will return true only if the primitive component was rendered in the last 0.1 seconds of game time.
+ *
+ * @param Tolerance  How many seconds ago the actor last render time can be and still count as having been "recently" rendered.
+ * @return Whether this actor was recently rendered.
+ */
+bool UOptimizerActorComponent::WasPrimitiveComponentRenderedRecently(UPrimitiveComponent* _PrimitiveComponent, float _Tolerance) const
+{
+	if (_PrimitiveComponent == nullptr)
+		return false;
+	if (const UWorld* const World = GetWorld())
+	{
+		return (World) ? (World->TimeSince(_PrimitiveComponent->GetLastRenderTimeOnScreen()) <= _Tolerance) : false;
+	}
+	return false;
+}
