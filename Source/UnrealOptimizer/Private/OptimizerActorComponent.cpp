@@ -17,6 +17,7 @@ UOptimizerActorComponent::UOptimizerActorComponent()
 	ArrowOptimizer->SetVisibility(true);
 	ArrowOptimizer->ArrowColor = FColor(255, 0, 0);
 	//ArrowOptimizer->SetRelativeScale3D(FVector::ZeroVector); //just for render activation
+	//OnSetLastRenderTime.__Internal_AddDynamic
 }
 
 
@@ -28,9 +29,6 @@ void UOptimizerActorComponent::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("Optimizer BeginPlay! %s"),*sn);
 	// ...Get Info
 	
-	//UPrimitiveComponent* PC = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent());
-	//float snmd = PC->MinDrawDistance;
-	//UE_LOG(LogTemp, Log, TEXT("MinDrawDistance :  %f"), snmd);
 	ArrowOptimizer->SetWorldLocation(GetOwner()->GetActorLocation());
 	GetOwner()->AddInstanceComponent(ArrowOptimizer);
 	if (bShowActorsOptimizer)
@@ -42,8 +40,16 @@ void UOptimizerActorComponent::BeginPlay()
 	if (!MonitorComponent)
 	{
 		MonitorComponent = Cast<UPrimitiveComponent>(GetOwner()->GetComponentByClass(UPrimitiveComponent::StaticClass()));
+		//OnSetLastRenderTime.
+		//OnDelegate.BindUFunction
 		if (!MonitorComponent) UE_LOG(LogTemp, Log, TEXT("Optimizer Casting problem! %s"), *GetNameSafe(GetOwner()));
 	}
+	// Set up finished delegate that gets called after all properties are updated
+	//float ftest;
+	//FTestDelegate FinishedDelegate;
+	//FinishedDelegate.BindUFunction(MonitorComponent->SetLastRenderTime(ftest), ftest);
+	//NewTimeline->SetTimelineFinishedFunc(FOnTimelineEvent(FinishedDelegate));
+
 }
 
 
@@ -79,12 +85,16 @@ bool UOptimizerActorComponent::CheckRenderInfo(UPrimitiveComponent* _PrimitiveCo
 {
 	if (const UWorld* const World = GetWorld())
 	{
-		UE_LOG(LogTemp, Log, TEXT("UPrimitiveComponent RenderInfo:"));
-		UE_LOG(LogTemp, Log, TEXT("Name Object: %s"),*GetNameSafe(_PrimitiveComp));
+		UE_LOG(LogTemp, Log, TEXT("UPrimitiveComponent RenderInfo SceneComponent: %s"),*GetNameSafe(_PrimitiveComp));
 		if (_PrimitiveComp)
 		{
 			int32 d = _PrimitiveComp->VisibilityId;
 			UE_LOG(LogTemp, Log, TEXT("VisibilityId = %d"), d);
+			int32 v = _PrimitiveComp->AttachmentCounter.GetValue();
+			UE_LOG(LogTemp, Log, TEXT("Counter = %d"), v);
+			float f1 = _PrimitiveComp->LastSubmitTime;
+			UE_LOG(LogTemp, Log, TEXT("LastSubmitTime = %d"), f1);
+			UE_LOG(LogTemp, Log, TEXT("OnCheckVisible.IsBound = %s"), (OnCheckVisible.IsBound() ? TEXT("True") : TEXT("False")));
 		}
 		return true;
 	};

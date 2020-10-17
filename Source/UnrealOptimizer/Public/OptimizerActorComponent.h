@@ -6,11 +6,17 @@
 #include "Components/ArrowComponent.h"
 #include "Components/StaticMeshComponent.h"
 
+//#include "Runtime/SlateCore/Public/Input/Reply.h"
+
 #include "OptimizerActorComponent.generated.h"
 
-/* Called when Render Component*/
+/* Called when Render Component Render*/
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEventDelegate_OnCheckRender, bool, RenderFlag, bool, VisibleFlag);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventDelegate_OnCheckVisible, bool, VisibleFlag);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSetLastRenderTime);
+typedef TBaseDelegate<void, float> FTestDelegate;
+DECLARE_DELEGATE_OneParam(FTestDelegate, float); //TBaseDelegate<void, bool>
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UNREALOPTIMIZER_API UOptimizerActorComponent : public UActorComponent
@@ -24,6 +30,12 @@ public:
 	// Sets default values for this component's properties
 	UOptimizerActorComponent();
 	
+	//UPROPERTY( Category = "UnrealOptimizer")
+	FTestDelegate OnDelegate;
+	
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "UnrealOptimizer")
+	FOnSetLastRenderTime OnSetLastRenderTime;
+
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "UnrealOptimizer")
 	FEventDelegate_OnCheckRender OnCheckRender;
 	/* Called when Visible OnScreen Component*/
@@ -49,6 +61,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
 
 public:	
 	// Called every frame
@@ -82,4 +95,7 @@ private:
 
 	bool bCachedRenderNow = bRenderNow; // Cached for one fire event
 		float RenderDelay = 0.0;
+
+
+
 };
