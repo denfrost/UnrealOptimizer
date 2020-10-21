@@ -1,7 +1,7 @@
 #include "OptimizerActorComponent.h"
 
-
 #include "Runtime/Renderer/Public/PrimitiveSceneInfo.h"
+#include "Renderer/Private/SceneCore.h"
 
 // Sets default values for this component's properties
 UOptimizerActorComponent::UOptimizerActorComponent()
@@ -12,7 +12,7 @@ UOptimizerActorComponent::UOptimizerActorComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickInterval = 0; // Set 0.2-0.25 for slow machine
 
-	ArrowOptimizer = CreateDefaultSubobject<UArrowComponent>(TEXT("OptimizerArrow"));
+	ArrowOptimizer = CreateDefaultSubobject<UOptimizerArrow>(TEXT("OptimizerArrow"));
     ArrowOptimizer->SetHiddenInGame(false,true);
 	ArrowOptimizer->SetVisibility(true);
 	ArrowOptimizer->ArrowColor = FColor(255, 0, 0);
@@ -58,25 +58,15 @@ void UOptimizerActorComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	bOnScreenNow = WasRecentlyVisible();
-	if (bCachedVisibleNow != bOnScreenNow)
+	bOnVisibleNow = WasRecentlyVisible();
+	if (bCachedVisibleNow != bOnVisibleNow)
 	{
-		OnCheckVisible.Broadcast(bOnScreenNow);
-		bCachedVisibleNow = bOnScreenNow;
+		OnCheckVisible.Broadcast(bOnVisibleNow);
+		bCachedVisibleNow = bOnVisibleNow;
 
-		//LogInfo
-		if (MonitorComponent) CheckRenderInfo(MonitorComponent);
+		//Checking Render comp
+		//if (MonitorComponent) CheckRenderInfo(MonitorComponent);
 	}
-
-	//bRenderNow = WasRecentlyRendered(RenderDelay);
-	/*if (bCachedRenderNow != bRenderNow)
-	{
-		OnCheckRender.Broadcast(bRenderNow, bOnScreenNow);
-		bCachedRenderNow = bRenderNow;
-	};*/
-
-	//ArrowComponent->SetVisibility(!bRenderNow);
-	// ...
 }
 
 
@@ -92,9 +82,23 @@ bool UOptimizerActorComponent::CheckRenderInfo(UPrimitiveComponent* _PrimitiveCo
 			UE_LOG(LogTemp, Log, TEXT("VisibilityId = %d"), d);
 			int32 v = _PrimitiveComp->AttachmentCounter.GetValue();
 			UE_LOG(LogTemp, Log, TEXT("Counter = %d"), v);
-			float f1 = _PrimitiveComp->LastSubmitTime;
-			UE_LOG(LogTemp, Log, TEXT("LastSubmitTime = %d"), f1);
-			UE_LOG(LogTemp, Log, TEXT("OnCheckVisible.IsBound = %s"), (OnCheckVisible.IsBound() ? TEXT("True") : TEXT("False")));
+
+			FPrimitiveSceneProxy* FPSProxy = _PrimitiveComp->SceneProxy;
+			FPrimitiveSceneInfo* FPSInfo = _PrimitiveComp->SceneProxy->GetPrimitiveSceneInfo();
+			bool Drawn = FPSInfo->bDrawInGame;
+			UE_LOG(LogTemp, Log, TEXT("Drawn = %s"), (Drawn ? TEXT("True") : TEXT("False")));
+			const FName nm = FPSProxy->GetLevelName();
+			UE_LOG(LogTemp, Log, TEXT("Draw for Level = %s"), *nm.ToString());
+
+			//const FStaticMeshBatchRelevance& sMesh = 
+			int32 ind = FPSInfo->GetIndex();
+			UE_LOG(LogTemp, Log, TEXT("Id in sceneInfo = %d"), ind);
+
+			//GetallactorsOfClass from ready array
+			int32 lsa = World->GetCurrentLevel()->Actors.Num(); 
+			UE_LOG(LogTemp, Log, TEXT("Actors in Scene = %d"), lsa);
+			//float scr_size = sMesh.ScreenSize;
+
 		}
 		return true;
 	};
@@ -144,4 +148,13 @@ bool UOptimizerActorComponent::WasPrimitiveComponentRenderedRecently(UPrimitiveC
 		return (World) ? (World->TimeSince(_PrimitiveComponent->GetLastRenderTimeOnScreen()) <= _Tolerance) : false;
 	}
 	return false;
+}
+
+
+//Primitive comp
+
+void UMyPrimitive::SetLastRenderTime(float InLastRenderTime)
+{
+	Super::SetLastRenderTime(InLastRenderTime);
+	OnCheckVisible.Broadcast(true);
 }

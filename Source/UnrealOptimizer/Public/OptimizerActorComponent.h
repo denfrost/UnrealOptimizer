@@ -16,7 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventDelegate_OnCheckVisible, bool,
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSetLastRenderTime);
 typedef TBaseDelegate<void, float> FTestDelegate;
-DECLARE_DELEGATE_OneParam(FTestDelegate, float); //TBaseDelegate<void, bool>
+DECLARE_DELEGATE_OneParam(FTestDelegate, float); 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UNREALOPTIMIZER_API UOptimizerActorComponent : public UActorComponent
@@ -52,9 +52,9 @@ public:
 
 	//Occlusion Property Info
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
-	bool bOnScreenNow;
+	bool bOnVisibleNow;
 
-	bool bCachedVisibleNow = bOnScreenNow; // Cached for one fire evemt
+	bool bCachedVisibleNow = bOnVisibleNow; // Cached for one fire evemt
 	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UnrealOptimizer")
 	float OccludedDelay = 0.0;
 
@@ -98,4 +98,28 @@ private:
 
 
 
+};
+
+
+
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class UNREALOPTIMIZER_API UOptimizerArrow : public UArrowComponent
+{
+	GENERATED_BODY()
+public:
+
+};
+
+// Hard
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class UNREALOPTIMIZER_API UMyPrimitive : public UPrimitiveComponent
+{
+	GENERATED_BODY()
+public:
+	/* Called when Visible OnScreen Component*/
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "UnrealOptimizer")
+	FEventDelegate_OnCheckVisible OnCheckVisible;
+
+	void SetLastRenderTime(float InLastRenderTime);
 };
